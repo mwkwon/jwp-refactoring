@@ -4,7 +4,6 @@ import kitchenpos.exception.OrderTableException;
 import kitchenpos.exception.TableGroupException;
 import kitchenpos.order.domain.OrderRepository;
 import kitchenpos.order.domain.Orders;
-import kitchenpos.table.application.TableService;
 import kitchenpos.table.domain.OrderTable;
 import kitchenpos.table.domain.OrderTables;
 import kitchenpos.table.domain.TableGroup;
@@ -24,21 +23,16 @@ public class OrderTableEventHandler {
     public static final String CONTAIN_ORDER_STATUS_COMPLETION_ERROR_MESSAGE = "주문 상태가 완료 상태가 아닌 주문 테이블이 존재하여 그룹 해제에 실패하였습니다.";
     public static final String ORDER_STATUS_COMPLETION_ERROR_MESSAGE = "주문 상태가 완료 상태가 아닌 경우 테이블 상태를 변경할 수 없습니다.";
 
-    private final TableService tableService;
     private final OrderRepository orderRepository;
 
-    public OrderTableEventHandler(TableService tableService, OrderRepository orderRepository) {
-        this.tableService = tableService;
+    public OrderTableEventHandler(OrderRepository orderRepository) {
         this.orderRepository = orderRepository;
     }
 
     @EventListener
     public void groupOrderTable(OrderTableGroupEvent orderTableGroupEvent) {
-        List<Long> orderTableIds = orderTableGroupEvent.getOrderTableIds();
-        validateTableIds(orderTableIds);
-        OrderTables orderTables = tableService.findAllByIds(orderTableIds);
-        validateOrderTables(orderTables, orderTableIds);
-        orderTables.updateGrouping(orderTableGroupEvent.getTableGroup());
+        validateTableIds(orderTableGroupEvent.getOrderTableIds());
+        validateOrderTables(orderTableGroupEvent.getOrderTables(), orderTableGroupEvent.getOrderTableIds());
     }
 
     @EventListener
@@ -53,7 +47,7 @@ public class OrderTableEventHandler {
     public void changeEmptyOrderTable(OrderTableChangeEmptyValidEvent orderTableChangeEmptyValidEvent) {
         OrderTable orderTable = orderTableChangeEmptyValidEvent.getOrderTable();
         validateIsGroupTable(orderTable);
-        Optional<Orders> optionalOrder = orderRepository.findByOrOrderTableId(orderTable.getId());
+        Optional<Orders> optionalOrder = orderRepository.findByOrderTableId(orderTable.getId());
         optionalOrder.ifPresent(order -> validateOrderStatus(order));
     }
 
